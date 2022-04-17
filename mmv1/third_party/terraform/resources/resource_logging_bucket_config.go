@@ -262,9 +262,17 @@ func resourceLoggingBucketConfigUpdate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceLoggingBucketConfigDelete(d *schema.ResourceData, meta interface{}) error {
-
-	log.Printf("[WARN] Logging bucket configs cannot be deleted. Removing logging bucket config from state: %#v", d.Id())
-	d.SetId("")
-
+	config := meta.(*Config)
+	userAgent, err := generateUserAgentString(d, config.userAgent)
+	if err != nil {
+		return err
+	}
+	url, err := replaceVars(d, config, fmt.Sprintf("{{LoggingBasePath}}%s", d.Id()))
+	if err != nil {
+		return err
+	}
+	if _, err := sendRequestWithTimeout(config, "DELETE", "", url, userAgent, nil, d.Timeout(schema.TimeoutUpdate)); err != nil {
+		return fmt.Errorf("Error deleting Logging Bucket Config %q: %s", d.Id(), err)
+	}
 	return nil
 }
