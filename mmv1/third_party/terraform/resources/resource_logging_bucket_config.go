@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-var loggingBucketConfigSchema = map[string]*schema.Schema{
+loggingBucketConfigSchema = map[string]*schema.Schema{
 	"name": {
 		Type:        schema.TypeString,
 		Computed:    true,
@@ -262,6 +262,14 @@ func resourceLoggingBucketConfigUpdate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceLoggingBucketConfigDelete(d *schema.ResourceData, meta interface{}) error {
+	name := d.Get("bucket_id")
+	for _, restrictedName := range []string{"_Required", "_Default"} {
+		if name == restrictedName {
+			log.Printf("[WARN] Default logging bucket configs cannot be deleted. Removing logging bucket config from state: %#v", d.Id())
+			return nil
+		}
+	}
+
 	config := meta.(*Config)
 	userAgent, err := generateUserAgentString(d, config.userAgent)
 	if err != nil {
